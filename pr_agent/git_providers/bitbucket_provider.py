@@ -41,10 +41,9 @@ class BitbucketProvider(GitProvider):
 
     def get_repo_settings(self):
         try:
-            contents = self.repo_obj.get_contents(
+            return self.repo_obj.get_contents(
                 ".pr_agent.toml", ref=self.pr.head.sha
             ).decoded_content
-            return contents
         except Exception:
             return ""
 
@@ -101,14 +100,12 @@ class BitbucketProvider(GitProvider):
             return False
 
     def is_supported(self, capability: str) -> bool:
-        if capability in [
+        return capability not in {
             "get_issue_comments",
             "create_inline_comment",
             "publish_inline_comments",
             "get_labels",
-        ]:
-            return False
-        return True
+        }
 
     def set_pr(self, pr_url: str):
         self.workspace_slug, self.repo_slug, self.pr_num = self._parse_pr_url(pr_url)
@@ -120,7 +117,9 @@ class BitbucketProvider(GitProvider):
     def get_diff_files(self) -> list[FilePatchInfo]:
         diffs = self.pr.diffstat()
         diff_split = [
-            "diff --git%s" % x for x in self.pr.diff().split("diff --git") if x.strip()
+            f"diff --git{x}"
+            for x in self.pr.diff().split("diff --git")
+            if x.strip()
         ]
 
         diff_files = []
@@ -140,8 +139,8 @@ class BitbucketProvider(GitProvider):
         return diff_files
 
     def publish_comment(self, pr_comment: str, is_temporary: bool = False):
-        comment = self.pr.comment(pr_comment)
         if is_temporary:
+            comment = self.pr.comment(pr_comment)
             self.temp_comments.append(comment["id"])
 
     def remove_initial_comment(self):
@@ -162,10 +161,12 @@ class BitbucketProvider(GitProvider):
                 "inline": {"to": from_line, "path": file},
             }
         )
-        response = requests.request(
-            "POST", self.bitbucket_comment_api_url, data=payload, headers=self.headers
+        return requests.request(
+            "POST",
+            self.bitbucket_comment_api_url,
+            data=payload,
+            headers=self.headers,
         )
-        return response
 
     def publish_inline_comments(self, comments: list[dict]):
         for comment in comments:
@@ -177,8 +178,7 @@ class BitbucketProvider(GitProvider):
         return self.pr.title
 
     def get_languages(self):
-        languages = {self._get_repo().get_data("language"): 0}
-        return languages
+        return {self._get_repo().get_data("language"): 0}
 
     def get_pr_branch(self):
         return self.pr.source_branch

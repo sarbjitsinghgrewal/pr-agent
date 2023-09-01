@@ -38,9 +38,13 @@ class AzureDevopsProvider:
             self.set_pr(pr_url)
 
     def is_supported(self, capability: str) -> bool:
-        if capability in ['get_issue_comments', 'create_inline_comment', 'publish_inline_comments', 'get_labels', 'remove_initial_comment']:
-            return False
-        return True
+        return capability not in {
+            'get_issue_comments',
+            'create_inline_comment',
+            'publish_inline_comments',
+            'get_labels',
+            'remove_initial_comment',
+        }
 
     def set_pr(self, pr_url: str):
         self.workspace_slug, self.repo_slug, self.pr_num = self._parse_pr_url(pr_url)
@@ -48,11 +52,14 @@ class AzureDevopsProvider:
 
     def get_repo_settings(self):
         try:
-            contents = self.azure_devops_client.get_item_content(repository_id=self.repo_slug,
-                                                                 project=self.workspace_slug, download=False,
-                                                                 include_content_metadata=False, include_content=True,
-                                                                 path=".pr_agent.toml")
-            return contents
+            return self.azure_devops_client.get_item_content(
+                repository_id=self.repo_slug,
+                project=self.workspace_slug,
+                download=False,
+                include_content_metadata=False,
+                include_content=True,
+                path=".pr_agent.toml",
+            )
         except Exception as e:
             logging.exception("get repo settings error")
             return ""
@@ -66,8 +73,7 @@ class AzureDevopsProvider:
             changes_obj = self.azure_devops_client.get_changes(project=self.workspace_slug,
                                                                repository_id=self.repo_slug, commit_id=i.commit_id)
 
-            for c in changes_obj.changes:
-                files.append(c['item']['path'])
+            files.extend(c['item']['path'] for c in changes_obj.changes)
         return list(set(files))
 
     def get_diff_files(self) -> list[FilePatchInfo]:
@@ -137,12 +143,12 @@ class AzureDevopsProvider:
             return []
 
     def publish_comment(self, pr_comment: str, is_temporary: bool = False):
-        comment = Comment(content=pr_comment)
-        thread = CommentThread(comments=[comment])
-        thread_response = self.azure_devops_client.create_thread(comment_thread=thread, project=self.workspace_slug,
-                                                                 repository_id=self.repo_slug,
-                                                                 pull_request_id=self.pr_num)
         if is_temporary:
+            comment = Comment(content=pr_comment)
+            thread = CommentThread(comments=[comment])
+            thread_response = self.azure_devops_client.create_thread(comment_thread=thread, project=self.workspace_slug,
+                                                                     repository_id=self.repo_slug,
+                                                                     pull_request_id=self.pr_num)
             self.temp_comments.append({'thread_id': thread_response.id, 'comment_id': comment.id})
 
     def publish_description(self, pr_title: str, pr_body: str):
@@ -189,19 +195,18 @@ class AzureDevopsProvider:
 
         total_extensions = sum(extension_counts.values())
 
-        extension_percentages = {ext: (count / total_extensions) * 100 for ext, count in extension_counts.items()}
-
-        return extension_percentages
+        return {
+            ext: (count / total_extensions) * 100
+            for ext, count in extension_counts.items()
+        }
 
     def get_pr_branch(self):
         pr_info = self.azure_devops_client.get_pull_request_by_id(project=self.workspace_slug,
                                                                   pull_request_id=self.pr_num)
-        source_branch = pr_info.source_ref_name.split('/')[-1]
-        return source_branch
+        return pr_info.source_ref_name.split('/')[-1]
 
     def get_pr_description(self):
-        max_tokens = get_settings().get("CONFIG.MAX_DESCRIPTION_TOKENS", None)
-        if max_tokens:
+        if max_tokens := get_settings().get("CONFIG.MAX_DESCRIPTION_TOKENS", None):
             return clip_tokens(self.pr.description, max_tokens)
         return self.pr.description
 
@@ -251,9 +256,7 @@ class AzureDevopsProvider:
 
         credentials = BasicAuthentication('', pat)
         azure_devops_connection = Connection(base_url=org, creds=credentials)
-        azure_devops_client = azure_devops_connection.clients.get_git_client()
-
-        return azure_devops_client
+        return azure_devops_connection.clients.get_git_client()
 
     def _get_repo(self):
         if self.repo is None:

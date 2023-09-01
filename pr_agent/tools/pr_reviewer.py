@@ -84,7 +84,7 @@ class PRReviewer:
             None
         """
         is_incremental = False
-        if args and len(args) >= 1:
+        if args:
             arg = args[0]
             if arg == "-i":
                 is_incremental = True
@@ -201,14 +201,15 @@ class PRReviewer:
 
                     # try to add line numbers link to code suggestions
                     if hasattr(self.git_provider, 'generate_link_to_relevant_line_number'):
-                        link = self.git_provider.generate_link_to_relevant_line_number(suggestion)
-                        if link:
+                        if link := self.git_provider.generate_link_to_relevant_line_number(
+                            suggestion
+                        ):
                             suggestion['relevant line'] = f"[{suggestion['relevant line']}]({link})"
 
         # Add incremental review section
         if self.incremental.is_incremental:
             last_commit_url = f"{self.git_provider.get_pr_url()}/commits/" \
-                              f"{self.git_provider.incremental.first_new_commit_sha}"
+                                  f"{self.git_provider.incremental.first_new_commit_sha}"
             data = OrderedDict(data)
             data.update({'Incremental PR Review': {
                 "⏮️ Review for commits since previous PR-Agent review": f"Starting from commit {last_commit_url}"}})
@@ -229,7 +230,7 @@ class PRReviewer:
         if get_settings().config.verbosity_level >= 2:
             logging.info(f"Markdown response:\n{markdown_text}")
 
-        if markdown_text == None or len(markdown_text) == 0:
+        if markdown_text is None or len(markdown_text) == 0:
             markdown_text = ""
 
         return markdown_text
@@ -259,8 +260,9 @@ class PRReviewer:
                 continue
 
             if self.git_provider.is_supported("create_inline_comment"):
-                comment = self.git_provider.create_inline_comment(content, relevant_file, relevant_line_in_file)
-                if comment:
+                if comment := self.git_provider.create_inline_comment(
+                    content, relevant_file, relevant_line_in_file
+                ):
                     comments.append(comment)
             else:
                 self.git_provider.publish_inline_comment(content, relevant_file, relevant_line_in_file)

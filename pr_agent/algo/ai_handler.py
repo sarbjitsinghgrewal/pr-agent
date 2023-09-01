@@ -84,8 +84,7 @@ class AiHandler:
             deployment_id = self.deployment_id
             if get_settings().config.verbosity_level >= 2:
                 logging.debug(
-                    f"Generating completion with {model}"
-                    f"{(' from deployment ' + deployment_id) if deployment_id else ''}"
+                    f"Generating completion with {model}{f' from deployment {deployment_id}' if deployment_id else ''}"
                 )
             response = await acompletion(
                 model=model,

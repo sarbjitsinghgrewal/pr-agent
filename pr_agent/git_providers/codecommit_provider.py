@@ -69,14 +69,12 @@ class CodeCommitProvider(GitProvider):
         return "CodeCommit"
 
     def is_supported(self, capability: str) -> bool:
-        if capability in [
+        return capability not in {
             "get_issue_comments",
             "create_inline_comment",
             "publish_inline_comments",
             "get_labels",
-        ]:
-            return False
-        return True
+        }
 
     def set_pr(self, pr_url: str):
         self.repo_name, self.pr_num = self._parse_pr_url(pr_url)
@@ -89,12 +87,16 @@ class CodeCommitProvider(GitProvider):
 
         self.git_files = []
         differences = self.codecommit_client.get_differences(self.repo_name, self.pr.destination_commit, self.pr.source_commit)
-        for item in differences:
-            self.git_files.append(CodeCommitFile(item.before_blob_path,
-                                                 item.before_blob_id,
-                                                 item.after_blob_path,
-                                                 item.after_blob_id,
-                                                 CodeCommitProvider._get_edit_type(item.change_type)))
+        self.git_files.extend(
+            CodeCommitFile(
+                item.before_blob_path,
+                item.before_blob_id,
+                item.after_blob_path,
+                item.after_blob_id,
+                CodeCommitProvider._get_edit_type(item.change_type),
+            )
+            for item in differences
+        )
         return self.git_files
 
     def get_diff_files(self) -> list[FilePatchInfo]:
@@ -230,12 +232,10 @@ class CodeCommitProvider(GitProvider):
             for ext in extensions:
                 main_extensions_flat[ext] = language
 
-        # Map the file extension/languages to percentages
-        languages = {}
-        for ext, pct in percentages.items():
-            languages[main_extensions_flat.get(ext, "")] = pct
-
-        return languages
+        return {
+            main_extensions_flat.get(ext, ""): pct
+            for ext, pct in percentages.items()
+        }
 
     def get_pr_branch(self):
         return self.pr.source_branch
@@ -374,8 +374,7 @@ class CodeCommitProvider(GitProvider):
         comment = comment.replace("<details>", "")
         comment = comment.replace("</details>", "")
         comment = comment.replace("<summary>", "")
-        comment = comment.replace("</summary>", "")
-        return comment
+        return comment.replace("</summary>", "")
 
     @staticmethod
     def _get_edit_type(codecommit_change_type: str):
@@ -443,8 +442,7 @@ class CodeCommitProvider(GitProvider):
 
         # Identify language by file extension and count
         lang_count = Counter(extensions)
-        # Convert counts to percentages
-        lang_percentage = {
-            lang: round(count / total_files * 100) for lang, count in lang_count.items()
+        return {
+            lang: round(count / total_files * 100)
+            for lang, count in lang_count.items()
         }
-        return lang_percentage

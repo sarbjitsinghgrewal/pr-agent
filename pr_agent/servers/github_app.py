@@ -52,8 +52,9 @@ async def get_body(request):
     except Exception as e:
         logging.error("Error parsing request body", e)
         raise HTTPException(status_code=400, detail="Error parsing request body") from e
-    webhook_secret = getattr(get_settings().github, 'webhook_secret', None)
-    if webhook_secret:
+    if webhook_secret := getattr(
+        get_settings().github, 'webhook_secret', None
+    ):
         body_bytes = await request.body()
         signature_header = request.headers.get('x-hub-signature-256', None)
         verify_signature(body_bytes, webhook_secret, signature_header)

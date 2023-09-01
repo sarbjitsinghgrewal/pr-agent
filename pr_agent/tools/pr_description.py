@@ -183,7 +183,7 @@ class PRDescription:
             else:
                 # if the value is a list, join its items by comma
                 if type(value) == list:
-                    value = ', '.join(v for v in value)
+                    value = ', '.join(value)
                 pr_body += f"{value}\n"
             if idx < len(data) - 1:
                 pr_body += "\n___\n"
