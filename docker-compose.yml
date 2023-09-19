@@ -3,7 +3,7 @@ services:
   myapp:
     build:
       context: .
-      dockerfile: Dockerfile.bitbucket_pipeline
+      dockerfile: Dockerfile.github_action
     ports:
       - "8080:80"
     environment:
