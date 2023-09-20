@@ -86,13 +86,14 @@ See the [usage guide](./Usage.md) for instructions how to run the different tool
 <div align="left">
 
 ## Table of Contents
+- [Table of Contents](#table-of-contents)
 - [Overview](#overview)
 - [Try it now](#try-it-now)
 - [Installation](#installation)
-- [Usage guide](./Usage.md)
 - [How it works](#how-it-works)
-- [Why use PR-Agent](#why-use-pr-agent)
+- [Why use PR-Agent?](#why-use-pr-agent)
 - [Roadmap](#roadmap)
+- [Similar Projects](#similar-projects)
 </div>
 
 
@@ -105,8 +106,8 @@ See the [usage guide](./Usage.md) for instructions how to run the different tool
 |       | Auto-Description                            |   :white_check_mark:    |   :white_check_mark:    |   :white_check_mark:        |   :white_check_mark:    |   :white_check_mark:    | :white_check_mark:    |
 |       | Improve Code                                |   :white_check_mark:    |   :white_check_mark:    |   :white_check_mark:        |   :white_check_mark:    |          |    :white_check_mark:    |
 |       | ⮑ Extended                             |   :white_check_mark:    |   :white_check_mark:    |        :white_check_mark:   |   :white_check_mark:    |          | :white_check_mark:    |
-|       | Reflect and Review                          |   :white_check_mark:    |                         |   :white_check_mark:        |          |   :white_check_mark:    |    :white_check_mark:    |
-|       | Update CHANGELOG.md                         |   :white_check_mark:    |                         |   :white_check_mark:        |          |          |       |
+|       | Reflect and Review                          |   :white_check_mark:    |   :white_check_mark:    |   :white_check_mark:        |          |   :white_check_mark:    |    :white_check_mark:    |
+|       | Update CHANGELOG.md                         |   :white_check_mark:    |   :white_check_mark:    |   :white_check_mark:        |          |          |       |
 |       | Find similar issue                          |   :white_check_mark:    |                         |                             |          |          |       |
 |       |                                             |        |        |      |      |      |
 | USAGE | CLI                                         |   :white_check_mark:    |   :white_check_mark:    |   :white_check_mark:       |   :white_check_mark:    |   :white_check_mark:    |
@@ -158,6 +159,7 @@ There are several ways to use PR-Agent:
 - [Method 6: Deploy as a Lambda Function](INSTALL.md#method-6---deploy-as-a-lambda-function)
 - [Method 7: AWS CodeCommit](INSTALL.md#method-7---aws-codecommit-setup)
 - [Method 8: Run a GitLab webhook server](INSTALL.md#method-8---run-a-gitlab-webhook-server)
+- [Method 9: Run as a Bitbucket Pipeline](INSTALL.md#method-9-run-as-a-bitbucket-pipeline)
 
 ## How it works
 
