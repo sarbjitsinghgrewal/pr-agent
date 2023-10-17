@@ -16,6 +16,7 @@ There are several ways to use PR-Agent:
 - [Method 6: Deploy as a Lambda Function](INSTALL.md#method-6---deploy-as-a-lambda-function)
 - [Method 7: AWS CodeCommit](INSTALL.md#method-7---aws-codecommit-setup)
 - [Method 8: Run a GitLab webhook server](INSTALL.md#method-8---run-a-gitlab-webhook-server)
+- [Method 9: Run as a Bitbucket Pipeline](INSTALL.md#method-9-run-as-a-bitbucket-pipeline)
 ---
 
 ### Method 1: Use Docker image (no installation required)
@@ -39,7 +40,7 @@ For other git providers, update CONFIG.GIT_PROVIDER accordingly, and check the `
 ```
 docker run --rm -it -e OPENAI.KEY=<your key> -e GITHUB.USER_TOKEN=<your token> codiumai/pr-agent --pr_url <pr_url> ask "<your question>"
 ```
-Note: If you want to ensure you're running a specific version of the Docker image, consider using the image's digest. 
+Note: If you want to ensure you're running a specific version of the Docker image, consider using the image's digest.
 The digest is a unique identifier for a specific version of an image. You can pull and run an image using its digest by referencing it like so: repository@sha256:digest. Always ensure you're using the correct and trusted digest for your operations.
 
 1. To request a review for a PR using a specific digest, run the following command:
@@ -88,17 +89,17 @@ chmod 600 pr_agent/settings/.secrets.toml
 
 ```
 export PYTHONPATH=[$PYTHONPATH:]<PATH to pr_agent folder>
-python pr_agent/cli.py --pr_url <pr_url> /review
-python pr_agent/cli.py --pr_url <pr_url> /ask <your question>
-python pr_agent/cli.py --pr_url <pr_url> /describe
-python pr_agent/cli.py --pr_url <pr_url> /improve
+python3 -m pr_agent.cli --pr_url <pr_url> review
+python3 -m pr_agent.cli --pr_url <pr_url> ask <your question>
+python3 -m pr_agent.cli --pr_url <pr_url> describe
+python3 -m pr_agent.cli --pr_url <pr_url> improve
 ```
 
 ---
 
 ### Method 3: Run as a GitHub Action
 
-You can use our pre-built Github Action Docker image to run PR-Agent as a Github Action. 
+You can use our pre-built Github Action Docker image to run PR-Agent as a Github Action.
 
 1. Add the following file to your repository under `.github/workflows/pr_agent.yml`:
 
@@ -122,7 +123,7 @@ jobs:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
-** if you want to pin your action to a specific commit for stability reasons
+** if you want to pin your action to a specific release (v0.7 for example) for stability reasons, use:
 ```yaml
 on:
   pull_request:
@@ -139,7 +140,7 @@ jobs:
     steps:
       - name: PR Agent action step
         id: pragent
-        uses: Codium-ai/pr-agent@<commit_sha>
+        uses: Codium-ai/pr-agent@v0.7
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -152,10 +153,10 @@ OPENAI_KEY: <your key>
 
 The GITHUB_TOKEN secret is automatically created by GitHub.
 
-3. Merge this change to your main branch. 
+3. Merge this change to your main branch.
 When you open your next PR, you should see a comment from `github-actions` bot with a review of your PR, and instructions on how to use the rest of the tools.
 
-4. You may configure PR-Agent by adding environment variables under the env section corresponding to any configurable property in the [configuration](./Usage.md) file. Some examples:
+4. You may configure PR-Agent by adding environment variables under the env section corresponding to any configurable property in the [configuration](pr_agent/settings/configuration.toml) file. Some examples:
 ```yaml
       env:
         # ... previous environment values
@@ -220,12 +221,12 @@ git clone https://github.com/Codium-ai/pr-agent.git
    - Copy your app's webhook secret to the webhook_secret field.
    - Set deployment_type to 'app' in [configuration.toml](./pr_agent/settings/configuration.toml)
 
-> The .secrets.toml file is not copied to the Docker image by default, and is only used for local development. 
+> The .secrets.toml file is not copied to the Docker image by default, and is only used for local development.
 > If you want to use the .secrets.toml file in your Docker image, you can add remove it from the .dockerignore file.
-> In most production environments, you would inject the secrets file as environment variables or as mounted volumes. 
+> In most production environments, you would inject the secrets file as environment variables or as mounted volumes.
 > For example, in order to inject a secrets file as a volume in a Kubernetes environment you can update your pod spec to include the following,
 > assuming you have a secret named `pr-agent-settings` with a key named `.secrets.toml`:
-``` 
+```
        volumes:
         - name: settings-volume
           secret:
@@ -321,7 +322,7 @@ Example IAM permissions to that user to allow access to CodeCommit:
                 "codecommit:PostComment*",
                 "codecommit:PutCommentReaction",
                 "codecommit:UpdatePullRequestDescription",
-                "codecommit:UpdatePullRequestTitle"                
+                "codecommit:UpdatePullRequestTitle"
             ],
             "Resource": "*"
         }
@@ -365,9 +366,68 @@ WEBHOOK_SECRET=$(python -c "import secrets; print(secrets.token_hex(10))")
     - Your OpenAI key.
     - In the [gitlab] section, fill in personal_access_token and shared_secret. The access token can be a personal access token, or a group or project access token.
     - Set deployment_type to 'gitlab' in [configuration.toml](./pr_agent/settings/configuration.toml)
-5. Create a webhook in GitLab. Set the URL to the URL of your app's server. Set the secret token to the generated secret from step 2. 
-In the "Trigger" section, check the ‘comments’ and ‘merge request events’ boxes. 
+5. Create a webhook in GitLab. Set the URL to the URL of your app's server. Set the secret token to the generated secret from step 2.
+In the "Trigger" section, check the ‘comments’ and ‘merge request events’ boxes.
 6. Test your installation by opening a merge request or commenting or a merge request using one of CodiumAI's commands.
+
+
+
+### Method 9: Run as a Bitbucket Pipeline
+
+
+You can use our pre-build Bitbucket-Pipeline docker image to run as Bitbucket-Pipeline.
+
+1. Add the following file in your repository bitbucket_pipelines.yml
+
+```yaml
+  pipelines:
+    pull-requests:
+      '**':
+        - step:
+            name: PR Agent Pipeline
+            caches:
+              - pip
+            image: python:3.8
+            services:
+              - docker
+            script:
+              - git clone https://github.com/Codium-ai/pr-agent.git
+              - cd pr-agent
+              - docker build -t bitbucket_runner:latest -f Dockerfile.bitbucket_pipeline .
+              - docker run -e OPENAI_API_KEY=$OPENAI_API_KEY -e BITBUCKET_BEARER_TOKEN=$BITBUCKET_BEARER_TOKEN -e BITBUCKET_PR_ID=$BITBUCKET_PR_ID -e BITBUCKET_REPO_SLUG=$BITBUCKET_REPO_SLUG -e BITBUCKET_WORKSPACE=$BITBUCKET_WORKSPACE bitbucket_runner:latest
+```
+
+2. Add the following secret to your repository under Repository settings > Pipelines > Repository variables.
+OPENAI_API_KEY: <your key>
+BITBUCKET_BEARER_TOKEN: <your token>
+
+3. To get BITBUCKET_BEARER_TOKEN follow these steps
+  So here is my step by step tutorial
+  i) Insert your workspace name instead of {workspace_name} and go to the following link in order to create an OAuth consumer.
+
+      https://bitbucket.org/{workspace_name}/workspace/settings/api
+
+      set callback URL to http://localhost:8976 (doesn't need to be a real server there)
+      select permissions: repository -> read
+
+  ii) use consumer's Key as a {client_id} and open the following URL in the browser
+
+      https://bitbucket.org/site/oauth2/authorize?client_id={client_id}&response_type=code
+
+  iii)
+      after you press "Grant access" in the browser it will redirect you to
+
+      http://localhost:8976?code=<CODE>
+
+  iv) use the code from the previous step and consumer's Key as a {client_id}, and consumer's Secret as {client_secret}
+
+      curl -X POST -u "{client_id}:{client_secret}" \
+          https://bitbucket.org/site/oauth2/access_token \
+          -d grant_type=authorization_code \
+          -d code={code} \
+
+
+After completing this steps, you just to place this access token in the repository varibles.
 
 
 =======

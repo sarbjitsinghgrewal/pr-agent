@@ -239,9 +239,10 @@ class GithubProvider(GitProvider):
     def get_user_id(self):
         if not self.github_user_id:
             try:
-                self.github_user_id = self.github_client.get_user().login
+                self.github_user_id = self.github_client.get_user().raw_data['login']
             except Exception as e:
-                logging.exception(f"Failed to get user id, error: {e}")
+                self.github_user_id = ""
+                # logging.exception(f"Failed to get user id, error: {e}")
         return self.github_user_id
 
     def get_notifications(self, since: datetime):
@@ -446,3 +447,10 @@ class GithubProvider(GitProvider):
                 logging.info(f"Failed adding line link, error: {e}")
 
         return ""
+
+    def get_pr_id(self):
+        try:
+            pr_id = f"{self.repo}/{self.pr_num}"
+            return pr_id
+        except:
+            return ""

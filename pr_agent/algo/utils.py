@@ -42,6 +42,7 @@ def convert_to_markdown(output_data: dict, gfm_supported: bool=True) -> str:
         "General suggestions": "💡",
         "Insights from user's answers": "📝",
         "Code feedback": "🤖",
+        "Estimated effort to review [1-5]": "⏱️",
     }
 
     for key, value in output_data.items():
@@ -61,7 +62,7 @@ def convert_to_markdown(output_data: dict, gfm_supported: bool=True) -> str:
                 markdown_text += f"- {emoji} **{key}:**\n\n"
             for item in value:
                 if isinstance(item, dict) and key.lower() == 'code feedback':
-                    markdown_text += parse_code_suggestion(item)
+                    markdown_text += parse_code_suggestion(item, gfm_supported)
                 elif item:
                     markdown_text += f"  - {item}\n"
             if key.lower() == 'code feedback':
@@ -75,7 +76,7 @@ def convert_to_markdown(output_data: dict, gfm_supported: bool=True) -> str:
     return markdown_text
 
 
-def parse_code_suggestion(code_suggestions: dict) -> str:
+def parse_code_suggestion(code_suggestions: dict, gfm_supported: bool=True) -> str:
     """
     Convert a dictionary of data into markdown format.
 
@@ -98,6 +99,9 @@ def parse_code_suggestion(code_suggestions: dict) -> str:
                 markdown_text += f"\n  - **{sub_key}:** {sub_value}\n"
             else:
                 markdown_text += f"   **{sub_key}:** {sub_value}\n"
+            if not gfm_supported:
+                if "relevant line" not in sub_key.lower(): # nicer presentation
+                        markdown_text = markdown_text.rstrip('\n') + "\\\n"
 
     markdown_text += "\n"
     return markdown_text
